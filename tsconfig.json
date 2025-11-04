@@ -18,6 +18,10 @@
       "@services/*": ["services/*"],
       "@state/*": ["state/*"],
       "@hooks/*": ["hooks/*"]      
-    }
+    },
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true
   }
 }

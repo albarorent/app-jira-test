@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { getTickets, Ticket } from '@services/ticketMockService';
 import { getUserByEmail, User } from '@services/userService';

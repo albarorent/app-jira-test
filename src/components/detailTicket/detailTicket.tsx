@@ -79,7 +79,9 @@ const DetailTicket = memo(
               </Text>
 
               {/* Picker para el estado del ticket */}
-              <View style={{ marginVertical: 10 }}>
+             {
+                roleUser === 'lead' ? (
+                   <View style={{ marginVertical: 10 }}>
                 <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Estado general del ticket:</Text>
                 <View style={[styles.pickerContainer, { borderColor: getStatusColor(selectedTicket.status) }]}>
                   <Picker
@@ -97,10 +99,8 @@ const DetailTicket = memo(
                   </Picker>
                 </View>
               </View>
-
-            {
-               roleUser !== 'lead' ? (
-                  <View
+                ) : (
+  <View
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -117,8 +117,10 @@ const DetailTicket = memo(
                   {getStatusText(selectedTicket.status)}
                 </Text>
               </View>
-               ) : null
-            }
+                )
+             }
+
+          
 
               <Text style={styles.modalLabel}>Descripción:</Text>
               <Text style={styles.modalValue}>{selectedTicket.description}</Text>

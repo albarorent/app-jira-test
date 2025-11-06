@@ -1,19 +1,51 @@
-import { View, Text, Modal, Button, StyleSheet } from 'react-native'
-import React, { memo } from 'react'
-import { ScrollView } from 'react-native-gesture-handler';
-import { getStatusColor, getStatusText, SUBTASK_STATUSES } from '@utils/helpers';
+import { View, Text, Modal, Button, StyleSheet } from 'react-native';
+import React, { memo, useState } from 'react';
+import { ScrollView, TextInput } from 'react-native-gesture-handler';
+import {
+  getStatusColor,
+  getStatusText,
+  SUBTASK_STATUSES,
+} from '@utils/helpers';
 import { Picker } from '@react-native-picker/picker';
 import { Ticket } from '@services/ticketMockService';
+import { useCommentStore } from '@state/useCommets';
 
 interface DetailTicketProps {
   selectedTicket: Ticket | null;
   setSelectedTicket: React.Dispatch<React.SetStateAction<Ticket | null>>;
-  handleChangeSubtaskStatus: (subtaskId: string, newStatus: 'open' | 'in_progress' | 'closed') => void;
+  handleChangeSubtaskStatus?: (
+    subtaskId: string,
+    newStatus: 'open' | 'in_progress' | 'closed',
+  ) => void;
+  myAssignments?: boolean;
+  user: { email: string };
 }
 
-const DetailTicket = memo(({ selectedTicket, setSelectedTicket, handleChangeSubtaskStatus }: DetailTicketProps) => {
-  return (
-     <Modal visible={!!selectedTicket} animationType="slide" transparent>
+const MAX_COMMENT_HEIGHT = 200;
+
+const DetailTicket = memo(
+  ({
+    selectedTicket,
+    setSelectedTicket,
+    handleChangeSubtaskStatus,
+    myAssignments = false,
+    user,
+  }: DetailTicketProps) => {
+    const [newComment, setNewComment] = useState('');
+    const addComment = useCommentStore(state => state.addComment);
+    const getComments = useCommentStore(state => state.getComments);
+    if (!selectedTicket) return null;
+
+    const comments = getComments(selectedTicket.id);
+
+    const handleSendComment = () => {
+      if (!newComment.trim()) return;
+      addComment(selectedTicket.id, user.email, newComment, true);
+      setNewComment('');
+    };
+
+    return (
+      <Modal visible={!!selectedTicket} animationType="slide" transparent>
         <View style={styles.modalContainer}>
           <View style={styles.modalBox}>
             <View
@@ -78,38 +110,113 @@ const DetailTicket = memo(({ selectedTicket, setSelectedTicket, handleChangeSubt
                       >
                         {getStatusText(sub.status)}
                       </Text>
-                      <Picker
-                        selectedValue={sub.status}
-                        style={{ height: 30, width: 120 }}
-                        onValueChange={itemValue =>
-                          handleChangeSubtaskStatus(
-                            sub.id,
-                            itemValue as 'open' | 'in_progress' | 'closed',
-                          )
-                        }
-                      >
-                        {SUBTASK_STATUSES.map(opt => (
-                          <Picker.Item
-                            key={opt.value}
-                            label={opt.label}
-                            value={opt.value}
-                          />
-                        ))}
-                      </Picker>
+                      {myAssignments && handleChangeSubtaskStatus  ? (
+                        <Picker
+                          selectedValue={sub.status}
+                          style={{ height: 30, width: 150 }}
+                          onValueChange={itemValue =>
+                            handleChangeSubtaskStatus(
+                              sub.id,
+                              itemValue as 'open' | 'in_progress' | 'closed',
+                            )
+                          }
+                        >
+                          {SUBTASK_STATUSES.map(status => (
+                            <Picker.Item
+                              key={status.value}
+                              label={status.label}
+                              value={status.value}
+                            />
+                          ))}
+                        </Picker>
+                      ) : null}
                     </View>
                   ))}
                 </>
               ) : null}
-              <Button title="Cerrar" onPress={() => setSelectedTicket(null)} />
+              <Text style={{ fontWeight: 'bold', marginTop: 20 }}>
+                Comentarios:
+              </Text>
+              <View style={{ maxHeight: MAX_COMMENT_HEIGHT }}>
+                <ScrollView>
+                  {comments.length === 0 ? (
+                    <Text style={{ color: '#aaa', fontStyle: 'italic' }}>
+                      Sin comentarios
+                    </Text>
+                  ) : (
+                    comments.map(c => (
+                      <View
+                        key={c.id}
+                        style={{
+                          marginVertical: 6,
+                          backgroundColor: '#f2f2f2',
+                          borderRadius: 7,
+                          padding: 7,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color:
+                              c.author !== user?.email
+                                ? '#691085ff'
+                                : '#a2c429ff',
+                            fontWeight: 'bold',
+                          }}
+                        >
+                          {c.author}
+                        </Text>
+                        <Text>{c.text}</Text>
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            color: '#aaa',
+                            alignSelf: 'flex-end',
+                          }}
+                        >
+                          {new Date(c.date).toLocaleString()}
+                        </Text>
+                      </View>
+                    ))
+                  )}
+                </ScrollView>
+              </View>
+              <TextInput
+                value={newComment}
+                onChangeText={setNewComment}
+                placeholder="Agrega un comentario (usa @ para mencionar)"
+                style={{
+                  borderColor: '#ccc',
+                  borderWidth: 1,
+                  borderRadius: 6,
+                  marginTop: 8,
+                  marginBottom: 8,
+                  minHeight: 40,
+                  padding: 6,
+                }}
+                multiline
+              />
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Button title="Enviar" onPress={handleSendComment} />
+                <Button
+                  title="Cerrar"
+                  onPress={() => setSelectedTicket(null)}
+                />
+              </View>
             </ScrollView>
           </View>
         </View>
       </Modal>
-  )
-});
+    );
+  },
+);
 
 const styles = StyleSheet.create({
-     modalContainer: {
+  modalContainer: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
@@ -145,5 +252,4 @@ const styles = StyleSheet.create({
   subtaskStatus: { marginLeft: 8, fontSize: 11 },
 });
 
-
-export default DetailTicket
+export default DetailTicket;

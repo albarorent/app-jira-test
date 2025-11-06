@@ -3,11 +3,12 @@ import { View, Text, Modal, Button, StyleSheet } from 'react-native';
 import { useUserStore } from '@state/userStore';
 import TicketList from '@components/ticketList/ticketList';
 import { Ticket } from '@services/ticketMockService';
+import DetailTicket from '@components/detailTicket/detailTicket';
 
 export default function DashboardComponent() {
   const user = useUserStore((state) => state.user);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
-
+  
   return (
     <View style={{ flex: 1 }}>
       <View style={styles.header}>
@@ -17,7 +18,13 @@ export default function DashboardComponent() {
 
       <TicketList onSelectTicket={(ticket) => setSelectedTicket(ticket)} />
 
-      <Modal visible={!!selectedTicket} animationType="slide" transparent>
+      <DetailTicket
+        selectedTicket={selectedTicket}
+        setSelectedTicket={setSelectedTicket}
+        user={user!}
+      />
+
+      {/* <Modal visible={!!selectedTicket} animationType="slide" transparent>
         <View style={styles.modalContainer}>
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>{selectedTicket?.title}</Text>
@@ -26,10 +33,12 @@ export default function DashboardComponent() {
             <Text>Descripción: {selectedTicket?.description}</Text>
             <Text>Fecha: {selectedTicket?.date}</Text>
 
+
+
             <Button title="Cerrar" onPress={() => setSelectedTicket(null)} />
           </View>
         </View>
-      </Modal>
+      </Modal> */}
     </View>
   );
 }

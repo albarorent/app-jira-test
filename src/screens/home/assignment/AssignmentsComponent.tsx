@@ -12,6 +12,7 @@ import { useUserStore } from '@state/userStore';
 import { getUserByEmail, User } from '@services/userService';
 
 import DetailTicket from '@components/detailTicket/detailTicket';
+import { getStatusColor, getStatusText } from '@utils/helpers';
 
 interface EnrichedTicket extends Ticket {
   assignedUser?: User;
@@ -22,7 +23,7 @@ export default function AssignmentsComponent() {
   const [tickets, setTickets] = useState<EnrichedTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
-
+  
   useEffect(() => {
     const loadAssignments = async () => {
       if (!user?.email) return;
@@ -42,6 +43,15 @@ export default function AssignmentsComponent() {
 
     loadAssignments();
   }, [user]);
+
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.header}>Mis asignaciones</Text>
+        <Text style={styles.empty}>Por favor, inicia sesión para ver tus asignaciones.</Text>
+      </View>
+    );
+  }
 
   const handleChangeSubtaskStatus = useCallback(
     (subtaskId: string, newStatus: 'open' | 'in_progress' | 'closed') => {
@@ -85,7 +95,13 @@ export default function AssignmentsComponent() {
             >
               <Text style={styles.title}>{item.title}</Text>
               <Text style={styles.subtitle}>{item.description}</Text>
-              <Text style={styles.status}>Estado: {item.status}</Text>
+
+              <Text
+                style={[styles.status, { color: getStatusColor(item.status) }]}
+              >
+                <Text style={{ fontWeight: 'bold' }}>Estado:</Text>{' '}
+                {getStatusText(item.status)}
+              </Text>
               <Text style={styles.date}>Asignado el {item.date}</Text>
             </TouchableOpacity>
           )}
@@ -96,6 +112,8 @@ export default function AssignmentsComponent() {
         selectedTicket={selectedTicket}
         setSelectedTicket={setSelectedTicket}
         handleChangeSubtaskStatus={handleChangeSubtaskStatus}
+        myAssignments={true}
+        user={user}
       />
     </View>
   );

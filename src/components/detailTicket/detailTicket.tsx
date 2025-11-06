@@ -1,39 +1,52 @@
-import { View, Text, Modal, Button, StyleSheet } from 'react-native';
-import React, { memo, useState } from 'react';
+import { View, Text, Modal, StyleSheet, Button } from 'react-native';
+import React, { memo, useEffect, useState } from 'react';
 import { ScrollView, TextInput } from 'react-native-gesture-handler';
-import {
-  getStatusColor,
-  getStatusText,
-  SUBTASK_STATUSES,
-} from '@utils/helpers';
 import { Picker } from '@react-native-picker/picker';
-import { Ticket } from '@services/ticketMockService';
+import { getStatusColor, getStatusText, SUBTASK_STATUSES } from '@utils/helpers';
+import { Ticket, TicketStatus, updateTicketStatus } from '@services/ticketMockService';
 import { useCommentStore } from '@state/useCommets';
+import { getUserByEmail } from '@services/userService';
 
 interface DetailTicketProps {
   selectedTicket: Ticket | null;
   setSelectedTicket: React.Dispatch<React.SetStateAction<Ticket | null>>;
   handleChangeSubtaskStatus?: (
     subtaskId: string,
-    newStatus: 'open' | 'in_progress' | 'closed',
+    newStatus: TicketStatus
   ) => void;
   myAssignments?: boolean;
   user: { email: string };
 }
 
-const MAX_COMMENT_HEIGHT = 200;
+const MAX_COMMENT_HEIGHT = 300;
+
+const TICKET_STATUSES = [
+  { value: 'done', label: 'Done' },
+  { value: 'cancel', label: 'Cancelado' },
+  { value: 'blocked', label: 'Bloqueado' },
+  { value: 'pending', label: 'Pendiente' },
+  { value: 'in_progress', label: 'En Progreso' },
+  { value: 'open', label: 'Abierto' },
+] as const;
 
 const DetailTicket = memo(
   ({
     selectedTicket,
     setSelectedTicket,
     handleChangeSubtaskStatus,
-    myAssignments = false,
     user,
   }: DetailTicketProps) => {
     const [newComment, setNewComment] = useState('');
+    const [roleUser, setRoleUser] = useState<string>('');
     const addComment = useCommentStore(state => state.addComment);
     const getComments = useCommentStore(state => state.getComments);
+
+    useEffect(() => {
+      getUserByEmail(user.email).then(userData => {
+        setRoleUser(userData?.role || '');
+      });
+    }, [selectedTicket, user.email]);
+
     if (!selectedTicket) return null;
 
     const comments = getComments(selectedTicket.id);
@@ -44,25 +57,50 @@ const DetailTicket = memo(
       setNewComment('');
     };
 
+    const handleTicketStatusChange = (newStatus: Ticket['status']) => {
+      if (selectedTicket.status === newStatus) return;
+      updateTicketStatus(selectedTicket.id, newStatus).then(updatedTicket => {
+        if (updatedTicket) setSelectedTicket(updatedTicket);
+      });
+    };
+
     return (
       <Modal visible={!!selectedTicket} animationType="slide" transparent>
         <View style={styles.modalContainer}>
           <View style={styles.modalBox}>
-            <View
-              style={[
-                { backgroundColor: getStatusColor(selectedTicket?.status) },
-              ]}
-            />
+            <View style={{ backgroundColor: getStatusColor(selectedTicket.status), height: 5 }} />
             <ScrollView contentContainerStyle={{ padding: 16 }}>
-              <Text style={styles.modalTitle}>{selectedTicket?.title}</Text>
+              <Text style={styles.modalTitle}>{selectedTicket.title}</Text>
               <Text style={styles.modalLabel}>
                 Asignado a:{' '}
                 <Text style={styles.modalValue}>
-                  {selectedTicket?.assignedTo}
+                  {selectedTicket.assignedTo}
                 </Text>
               </Text>
 
-              <View
+              {/* Picker para el estado del ticket */}
+              <View style={{ marginVertical: 10 }}>
+                <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Estado general del ticket:</Text>
+                <View style={[styles.pickerContainer, { borderColor: getStatusColor(selectedTicket.status) }]}>
+                  <Picker
+                    enabled={roleUser === 'lead'}
+                    onValueChange={(itemValue) => handleTicketStatusChange(itemValue as Ticket['status'])}
+                  >
+                    {TICKET_STATUSES.map(status => (
+                      <Picker.Item
+                        key={status.value}
+                        label={status.label}
+                        value={status.value}
+                        color={getStatusColor(status.value)}
+                      />
+                    ))}
+                  </Picker>
+                </View>
+              </View>
+
+            {
+               roleUser !== 'lead' ? (
+                  <View
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -72,27 +110,25 @@ const DetailTicket = memo(
                 <View
                   style={[
                     styles.statusDot,
-                    { backgroundColor: getStatusColor(selectedTicket?.status) },
+                    { backgroundColor: getStatusColor(selectedTicket.status) },
                   ]}
                 />
                 <Text style={styles.statusText}>
-                  {getStatusText(selectedTicket?.status)}
+                  {getStatusText(selectedTicket.status)}
                 </Text>
               </View>
+               ) : null
+            }
 
               <Text style={styles.modalLabel}>Descripción:</Text>
-              <Text style={styles.modalValue}>
-                {selectedTicket?.description}
-              </Text>
+              <Text style={styles.modalValue}>{selectedTicket.description}</Text>
 
               <Text style={styles.modalLabel}>Fecha:</Text>
-              <Text style={styles.modalValue}>{selectedTicket?.date}</Text>
+              <Text style={styles.modalValue}>{selectedTicket.date}</Text>
 
-              {selectedTicket?.subtasks?.length ? (
+              {selectedTicket.subtasks?.length ? (
                 <>
-                  <Text style={[styles.modalLabel, { marginTop: 12 }]}>
-                    Subtareas:
-                  </Text>
+                  <Text style={[styles.modalLabel, { marginTop: 12 }]}>Subtareas:</Text>
                   {selectedTicket.subtasks.map(sub => (
                     <View key={sub.id} style={styles.subtaskItem}>
                       <View
@@ -107,17 +143,15 @@ const DetailTicket = memo(
                           styles.subtaskStatus,
                           { color: getStatusColor(sub.status) },
                         ]}
-                      >
-                        {getStatusText(sub.status)}
-                      </Text>
-                      {myAssignments && handleChangeSubtaskStatus  ? (
+                      >{getStatusText(sub.status)}</Text>
+                      {handleChangeSubtaskStatus && roleUser === 'lead' ? (
                         <Picker
                           selectedValue={sub.status}
                           style={{ height: 30, width: 150 }}
                           onValueChange={itemValue =>
                             handleChangeSubtaskStatus(
                               sub.id,
-                              itemValue as 'open' | 'in_progress' | 'closed',
+                              itemValue,
                             )
                           }
                         >
@@ -134,6 +168,7 @@ const DetailTicket = memo(
                   ))}
                 </>
               ) : null}
+
               <Text style={{ fontWeight: 'bold', marginTop: 20 }}>
                 Comentarios:
               </Text>
@@ -154,25 +189,18 @@ const DetailTicket = memo(
                           padding: 7,
                         }}
                       >
-                        <Text
-                          style={{
-                            color:
-                              c.author !== user?.email
-                                ? '#691085ff'
-                                : '#a2c429ff',
-                            fontWeight: 'bold',
-                          }}
-                        >
+                        <Text style={{
+                          color: c.author !== user.email ? '#691085ff' : '#a2c429ff',
+                          fontWeight: 'bold',
+                        }}>
                           {c.author}
                         </Text>
                         <Text>{c.text}</Text>
-                        <Text
-                          style={{
-                            fontSize: 11,
-                            color: '#aaa',
-                            alignSelf: 'flex-end',
-                          }}
-                        >
+                        <Text style={{
+                          fontSize: 11,
+                          color: '#aaa',
+                          alignSelf: 'flex-end',
+                        }}>
                           {new Date(c.date).toLocaleString()}
                         </Text>
                       </View>
@@ -195,24 +223,19 @@ const DetailTicket = memo(
                 }}
                 multiline
               />
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                }}
-              >
+              <View style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+              }}>
                 <Button title="Enviar" onPress={handleSendComment} />
-                <Button
-                  title="Cerrar"
-                  onPress={() => setSelectedTicket(null)}
-                />
+                <Button title="Cerrar" onPress={() => setSelectedTicket(null)} />
               </View>
             </ScrollView>
           </View>
         </View>
       </Modal>
     );
-  },
+  }
 );
 
 const styles = StyleSheet.create({
@@ -228,6 +251,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     elevation: 5,
     maxHeight: '80%',
+  },
+  pickerContainer: {
+    borderWidth: 1.5,
+    borderRadius: 6,
+    backgroundColor: '#fafafa',
+    marginVertical: 2,
   },
   modalTitle: { fontSize: 21, fontWeight: 'bold', marginBottom: 6 },
   modalLabel: { fontWeight: 'bold', marginTop: 8 },

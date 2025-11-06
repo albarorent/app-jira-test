@@ -35,11 +35,6 @@ interface ActionsCommentStore {
   getNotifications: (forEmail: string) => Notification[];
   markNotificationSeen: (notifId: string) => void;
 }
-<<<<<<< HEAD
-// store de comentarios y notificaciones
-=======
-
->>>>>>> e5e1d99 (feat(ui): agregar comentarios en detalle de tareas)
 export const useCommentStore = create<StateCommentStore & ActionsCommentStore>()(
   persist(
     (set, get) => ({
@@ -90,11 +85,7 @@ export const useCommentStore = create<StateCommentStore & ActionsCommentStore>()
         })),
     }),
     {
-<<<<<<< HEAD
-      name: 'comment-store', 
-=======
       name: 'comment-store', // nombre de la clave en AsyncStorage
->>>>>>> e5e1d99 (feat(ui): agregar comentarios en detalle de tareas)
       storage: {
         getItem: async (name) => {
           const value = await AsyncStorage.getItem(name);

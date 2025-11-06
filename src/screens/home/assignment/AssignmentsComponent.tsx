@@ -13,6 +13,7 @@ import { getUserByEmail, User } from '@services/userService';
 
 import DetailTicket from '@components/detailTicket/detailTicket';
 import { getStatusColor, getStatusText } from '@utils/helpers';
+import { useSubtaskStatus } from '@hooks/useChangeSubtaskStatus';
 
 interface EnrichedTicket extends Ticket {
   assignedUser?: User;
@@ -23,6 +24,7 @@ export default function AssignmentsComponent() {
   const [tickets, setTickets] = useState<EnrichedTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const { handleChangeSubtaskStatus } = useSubtaskStatus(setSelectedTicket);
   
   useEffect(() => {
     const loadAssignments = async () => {
@@ -53,20 +55,7 @@ export default function AssignmentsComponent() {
     );
   }
 
-  const handleChangeSubtaskStatus = useCallback(
-    (subtaskId: string, newStatus: 'open' | 'in_progress' | 'closed') => {
-      setSelectedTicket(prevTicket => {
-        if (!prevTicket) return prevTicket;
-        const updatedSubtasks = prevTicket.subtasks
-          ? prevTicket.subtasks.map(st =>
-              st.id === subtaskId ? { ...st, status: newStatus } : st,
-            )
-          : [];
-        return { ...prevTicket, subtasks: updatedSubtasks };
-      });
-    },
-    [setSelectedTicket],
-  );
+ 
 
   if (loading) {
     return (

@@ -6,11 +6,14 @@ import { getTicketId, Ticket } from '@services/ticketMockService';
 import DetailTicket from '@components/detailTicket/detailTicket';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import NotificationsPanel from '@components/notifications/NotificationPanel';
+import { useSubtaskStatus } from '@hooks/useChangeSubtaskStatus';
 
 export default function DashboardComponent() {
   const user = useUserStore(state => state.user);
+
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
+  const { handleChangeSubtaskStatus } = useSubtaskStatus(setSelectedTicket);
 
   return (
     <View style={{ flex: 1, paddingTop: 40 }}>
@@ -34,6 +37,7 @@ export default function DashboardComponent() {
         selectedTicket={selectedTicket}
         setSelectedTicket={setSelectedTicket}
         user={user!}
+        handleChangeSubtaskStatus={handleChangeSubtaskStatus}
       />
 
       {/* Modal de notificaciones */}

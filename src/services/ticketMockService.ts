@@ -3,10 +3,12 @@ export interface Ticket {
   assignedTo: string;
   title: string;
   description: string;
-  status: 'open' | 'in_progress' | 'closed';
+  status: TicketStatus;
   date: string;
   subtasks?: Ticket[];
 }
+
+export type TicketStatus = 'open' | 'in_progress' | 'closed' | 'done' | 'cancel' | 'pending' | 'blocked';
 
 const mockTickets: Ticket[] = [
   {
@@ -204,5 +206,22 @@ export const assignmentsList = (email: string): Promise<Ticket[]> => {
       const assigned = mockTickets.filter(t => t.assignedTo === email);
       resolve(assigned);
     }, 400);
+  });
+};
+
+export const updateTicketStatus = (
+  id: string,
+  newStatus: Ticket['status']
+): Promise<Ticket | null> => {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      const idx = mockTickets.findIndex(t => t.id === id);
+      if (idx === -1) return resolve(null);
+      mockTickets[idx] = {
+        ...mockTickets[idx],
+        status: newStatus,
+      };
+      resolve(mockTickets[idx]);
+    }, 200);
   });
 };

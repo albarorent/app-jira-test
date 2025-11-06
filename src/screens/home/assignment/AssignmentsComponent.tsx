@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,14 +6,12 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
-  Modal,
-  Button,
 } from 'react-native';
 import { assignmentsList, Ticket } from '@services/ticketMockService';
 import { useUserStore } from '@state/userStore';
 import { getUserByEmail, User } from '@services/userService';
-import { ScrollView } from 'react-native-gesture-handler';
-import { getStatusColor, getStatusText } from '@utils/delay';
+
+import DetailTicket from '@components/detailTicket/detailTicket';
 
 interface EnrichedTicket extends Ticket {
   assignedUser?: User;
@@ -44,6 +42,21 @@ export default function AssignmentsComponent() {
 
     loadAssignments();
   }, [user]);
+
+  const handleChangeSubtaskStatus = useCallback(
+    (subtaskId: string, newStatus: 'open' | 'in_progress' | 'closed') => {
+      setSelectedTicket(prevTicket => {
+        if (!prevTicket) return prevTicket;
+        const updatedSubtasks = prevTicket.subtasks
+          ? prevTicket.subtasks.map(st =>
+              st.id === subtaskId ? { ...st, status: newStatus } : st,
+            )
+          : [];
+        return { ...prevTicket, subtasks: updatedSubtasks };
+      });
+    },
+    [setSelectedTicket],
+  );
 
   if (loading) {
     return (
@@ -79,80 +92,11 @@ export default function AssignmentsComponent() {
         />
       )}
 
-      <Modal visible={!!selectedTicket} animationType="slide" transparent>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalBox}>
-            {/* Estado visual (borde lateral o etiqueta color) */}
-            <View
-              style={[
-                { backgroundColor: getStatusColor(selectedTicket?.status) },
-              ]}
-            />
-            <ScrollView contentContainerStyle={{ padding: 16 }}>
-              <Text style={styles.modalTitle}>{selectedTicket?.title}</Text>
-              <Text style={styles.modalLabel}>
-                Asignado a:{' '}
-                <Text style={styles.modalValue}>
-                  {selectedTicket?.assignedTo}
-                </Text>
-              </Text>
-
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  marginVertical: 6,
-                }}
-              >
-                <View
-                  style={[
-                    styles.statusDot,
-                    { backgroundColor: getStatusColor(selectedTicket?.status) },
-                  ]}
-                />
-                <Text style={styles.statusText}>
-                  {getStatusText(selectedTicket?.status)}
-                </Text>
-              </View>
-
-              <Text style={styles.modalLabel}>Descripción:</Text>
-              <Text style={styles.modalValue}>
-                {selectedTicket?.description}
-              </Text>
-
-              <Text style={styles.modalLabel}>Fecha:</Text>
-              <Text style={styles.modalValue}>{selectedTicket?.date}</Text>
-
-              {/* Subtareas */}
-              {selectedTicket?.subtasks?.length ? (
-                <>
-                  <Text style={[styles.modalLabel, { marginTop: 12 }]}>
-                    Subtareas:
-                  </Text>
-                  {selectedTicket.subtasks.map(sub => (
-                    <View key={sub.id} style={styles.subtaskItem}>
-                      <View
-                        style={[
-                          styles.subStatusDot,
-                          { backgroundColor: getStatusColor(sub.status) },
-                        ]}
-                      />
-                      <Text style={styles.subtaskTitle}>{sub.title}</Text>
-                      <Text style={styles.subtaskStatus}>
-                        {getStatusText(sub.status)}
-                      </Text>
-                    </View>
-                  ))}
-                </>
-              ) : null}
-
-              {/* Aquí podrías agregar comentarios, botón para agregar comentarios o cambiar estado */}
-
-              <Button title="Cerrar" onPress={() => setSelectedTicket(null)} />
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      <DetailTicket
+        selectedTicket={selectedTicket}
+        setSelectedTicket={setSelectedTicket}
+        handleChangeSubtaskStatus={handleChangeSubtaskStatus}
+      />
     </View>
   );
 }
@@ -171,38 +115,4 @@ const styles = StyleSheet.create({
   status: { color: '#691085ff', marginTop: 6, fontWeight: '500' },
   date: { color: '#999', marginTop: 4, fontSize: 12 },
   empty: { textAlign: 'center', marginTop: 40, color: 'gray' },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-  },
-  modalBox: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginHorizontal: 16,
-    elevation: 5,
-    maxHeight: '80%',
-  },
-  modalTitle: { fontSize: 21, fontWeight: 'bold', marginBottom: 6 },
-  modalLabel: { fontWeight: 'bold', marginTop: 8 },
-  modalValue: { marginBottom: 4, color: '#444' },
- 
-  statusText: { marginLeft: 8, fontWeight: 'bold' },
-  statusDot: { width: 13, height: 13, borderRadius: 7, marginRight: 4 },
-  subStatusDot: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-    marginRight: 5,
-    marginTop: 2,
-  },
-  subtaskItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-    marginLeft: 8,
-  },
-  subtaskTitle: { flex: 1, color: '#222' },
-  subtaskStatus: { marginLeft: 8, fontSize: 11, color: '#999' },
 });

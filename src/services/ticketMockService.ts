@@ -189,6 +189,15 @@ export const getTickets = (): Promise<Ticket[]> => {
   });
 };
 
+export const getTicketId = (id: string): Promise<Ticket | null> => {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      const ticket = mockTickets.find(t => t.id === id) || null;
+      resolve(ticket);
+    }, 300);
+  });
+}
+
 export const assignmentsList = (email: string): Promise<Ticket[]> => {
   return new Promise(resolve => {
     setTimeout(() => {

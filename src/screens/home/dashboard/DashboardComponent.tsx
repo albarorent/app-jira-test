@@ -53,7 +53,6 @@ export default function DashboardComponent() {
               user={user!}
               onSelectTicket={ticketId => {
                 getTicketId(ticketId).then(ticket => {
-                  
                   if (ticket) {
                     setSelectedTicket(ticket as unknown as Ticket);
                   }

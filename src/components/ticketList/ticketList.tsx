@@ -10,6 +10,7 @@ import { getTickets, Ticket } from '@services/ticketMockService';
 import { getUserByEmail, User } from '@services/userService';
 import { useUserStore } from '@state/userStore';
 import { getStatusColor, getStatusText } from '@utils/helpers';
+import { useStatusStore } from '@state/useStatusStore';
 
 interface TicketListProps {
   onSelectTicket: (ticket: Ticket) => void;
@@ -23,6 +24,7 @@ export default function TicketList({ onSelectTicket }: TicketListProps) {
   const [tickets, setTickets] = useState<EnrichedTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const currentUser = useUserStore(state => state.user);
+  const status = useStatusStore(state => state.status);
 
   useEffect(() => {
     const loadTickets = async () => {
@@ -40,7 +42,7 @@ export default function TicketList({ onSelectTicket }: TicketListProps) {
     };
 
     loadTickets();
-  }, []);
+  }, [status]);
 
   if (loading) {
     return (

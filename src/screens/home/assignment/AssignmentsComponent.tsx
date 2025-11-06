@@ -82,7 +82,6 @@ export default function AssignmentsComponent() {
         setSelectedTicket={setSelectedTicket}
         handleChangeSubtaskStatus={handleChangeSubtaskStatus}
         user={user}
-        myAssignments={true}
       />
     </View>
   );

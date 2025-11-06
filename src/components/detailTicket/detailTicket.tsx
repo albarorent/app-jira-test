@@ -24,7 +24,6 @@ interface DetailTicketProps {
     newStatus: TicketStatus,
   ) => void;
   user: { email: string };
-  myAssignments?: boolean;
 }
 
 const MAX_COMMENT_HEIGHT = 300;
@@ -44,7 +43,6 @@ const DetailTicket = memo(
     setSelectedTicket,
     handleChangeSubtaskStatus,
     user,
-    myAssignments
   }: DetailTicketProps) => {
     const [newComment, setNewComment] = useState('');
     const [roleUser, setRoleUser] = useState<string>('');
@@ -77,7 +75,7 @@ const DetailTicket = memo(
         }
       });
     };
-    
+
     return (
       <Modal visible={!!selectedTicket} animationType="slide" transparent>
         <View style={styles.modalContainer}>
@@ -162,42 +160,46 @@ const DetailTicket = memo(
                   <Text style={[styles.modalLabel, { marginTop: 12 }]}>
                     Subtareas:
                   </Text>
-                  {selectedTicket.subtasks.map(sub => (
-                    <View key={sub.id} style={styles.subtaskItem}>
-                      <View
-                        style={[
-                          styles.subStatusDot,
-                          { backgroundColor: getStatusColor(sub.status) },
-                        ]}
-                      />
-                      <Text style={styles.subtaskTitle}>{sub.title}</Text>
-                      <Text
-                        style={[
-                          styles.subtaskStatus,
-                          { color: getStatusColor(sub.status) },
-                        ]}
-                      >
-                        {getStatusText(sub.status)}
-                      </Text>
-                      {(handleChangeSubtaskStatus && roleUser === 'lead' || myAssignments && handleChangeSubtaskStatus) ? (
-                        <Picker
-                          selectedValue={sub.status}
-                          style={{ height: 30, width: 150 }}
-                          onValueChange={itemValue =>
-                            handleChangeSubtaskStatus(sub.id, itemValue)
-                          }
+                  {selectedTicket.subtasks.map(sub => {
+                    return (
+                      <View key={sub.id} style={styles.subtaskItem}>
+                        <View
+                          style={[
+                            styles.subStatusDot,
+                            { backgroundColor: getStatusColor(sub.status) },
+                          ]}
+                        />
+                        <Text style={styles.subtaskTitle}>{sub.title}</Text>
+                        <Text
+                          style={[
+                            styles.subtaskStatus,
+                            { color: getStatusColor(sub.status) },
+                          ]}
                         >
-                          {SUBTASK_STATUSES.map(status => (
-                            <Picker.Item
-                              key={status.value}
-                              label={status.label}
-                              value={status.value}
-                            />
-                          ))}
-                        </Picker>
-                      ) : null}
-                    </View>
-                  ))}
+                          {getStatusText(sub.status)}
+                        </Text>
+                        {(handleChangeSubtaskStatus && roleUser === 'lead') ||
+                        (handleChangeSubtaskStatus &&
+                          user.email === selectedTicket.assignedTo) ? (
+                          <Picker
+                            selectedValue={sub.status}
+                            style={{ height: 30, width: 150 }}
+                            onValueChange={itemValue =>
+                              handleChangeSubtaskStatus(sub.id, itemValue)
+                            }
+                          >
+                            {SUBTASK_STATUSES.map(status => (
+                              <Picker.Item
+                                key={status.value}
+                                label={status.label}
+                                value={status.value}
+                              />
+                            ))}
+                          </Picker>
+                        ) : null}
+                      </View>
+                    );
+                  })}
                 </>
               ) : null}
 

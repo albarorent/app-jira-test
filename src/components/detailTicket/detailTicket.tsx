@@ -23,8 +23,8 @@ interface DetailTicketProps {
     subtaskId: string,
     newStatus: TicketStatus,
   ) => void;
-  myAssignments?: boolean;
   user: { email: string };
+  myAssignments?: boolean;
 }
 
 const MAX_COMMENT_HEIGHT = 300;
@@ -44,18 +44,19 @@ const DetailTicket = memo(
     setSelectedTicket,
     handleChangeSubtaskStatus,
     user,
+    myAssignments
   }: DetailTicketProps) => {
     const [newComment, setNewComment] = useState('');
     const [roleUser, setRoleUser] = useState<string>('');
-    const addComment = useCommentStore(state => state.addComment);
     const getComments = useCommentStore(state => state.getComments);
+    const addComment = useCommentStore(state => state.addComment);
     const setStatus = useStatusStore(state => state.setStatus);
 
     useEffect(() => {
       getUserByEmail(user.email).then(userData => {
         setRoleUser(userData?.role || '');
       });
-    }, [selectedTicket, user.email]);
+    }, [user.email]);
 
     if (!selectedTicket) return null;
 
@@ -178,7 +179,7 @@ const DetailTicket = memo(
                       >
                         {getStatusText(sub.status)}
                       </Text>
-                      {handleChangeSubtaskStatus && roleUser === 'lead' ? (
+                      {(handleChangeSubtaskStatus && roleUser === 'lead' || myAssignments && handleChangeSubtaskStatus) ? (
                         <Picker
                           selectedValue={sub.status}
                           style={{ height: 30, width: 150 }}

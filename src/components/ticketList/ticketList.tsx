@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import {
   Text,
   FlatList,
@@ -6,43 +5,26 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
-import { getTickets, Ticket } from '@services/ticketMockService';
-import { getUserByEmail, User } from '@services/userService';
+import { Ticket } from '@services/ticketMockService';
+import { User } from '@services/userService';
 import { useUserStore } from '@state/userStore';
 import { getStatusColor, getStatusText } from '@utils/helpers';
 import { useStatusStore } from '@state/useStatusStore';
+import { useLoadTicket } from '@hooks/useLoadTicket';
 
 interface TicketListProps {
   onSelectTicket: (ticket: Ticket) => void;
 }
 
-interface EnrichedTicket extends Ticket {
+export interface EnrichedTicket extends Ticket {
   assignedUser?: User;
 }
 
 export default function TicketList({ onSelectTicket }: TicketListProps) {
-  const [tickets, setTickets] = useState<EnrichedTicket[]>([]);
-  const [loading, setLoading] = useState(true);
+  
   const currentUser = useUserStore(state => state.user);
   const status = useStatusStore(state => state.status);
-
-  useEffect(() => {
-    const loadTickets = async () => {
-      const allTickets = await getTickets();
-
-      const enrichedTickets = await Promise.all(
-        allTickets.map(async t => {
-          const user = await getUserByEmail(t.assignedTo);
-          return { ...t, assignedUser: user };
-        }),
-      );
-
-      setTickets(enrichedTickets);
-      setLoading(false);
-    };
-
-    loadTickets();
-  }, [status]);
+  const { tickets, loading } = useLoadTicket(status ?? undefined);
 
   if (loading) {
     return (

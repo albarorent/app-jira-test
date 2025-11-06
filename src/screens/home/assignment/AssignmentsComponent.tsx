@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,55 +7,35 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
-import { assignmentsList, Ticket } from '@services/ticketMockService';
+import { Ticket } from '@services/ticketMockService';
 import { useUserStore } from '@state/userStore';
-import { getUserByEmail, User } from '@services/userService';
 
 import DetailTicket from '@components/detailTicket/detailTicket';
 import { getStatusColor, getStatusText } from '@utils/helpers';
 import { useSubtaskStatus } from '@hooks/useChangeSubtaskStatus';
-
-interface EnrichedTicket extends Ticket {
-  assignedUser?: User;
-}
+import { useStatusStore } from '@state/useStatusStore';
+import { useLoadAssignments } from '@hooks/useLoadAssignments';
 
 export default function AssignmentsComponent() {
   const user = useUserStore(state => state.user);
-  const [tickets, setTickets] = useState<EnrichedTicket[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const { handleChangeSubtaskStatus } = useSubtaskStatus(setSelectedTicket);
-  
-  useEffect(() => {
-    const loadAssignments = async () => {
-      if (!user?.email) return;
-
-      const myAssignments = await assignmentsList(user.email);
-
-      const enriched = await Promise.all(
-        myAssignments.map(async t => {
-          const assignedUser = await getUserByEmail(t.assignedTo);
-          return { ...t, assignedUser };
-        }),
-      );
-
-      setTickets(enriched);
-      setLoading(false);
-    };
-
-    loadAssignments();
-  }, [user]);
+  const status = useStatusStore(state => state.status);
+  const { tickets, loading } = useLoadAssignments(
+    user?.email || '',
+    status ?? '',
+  );
 
   if (!user) {
     return (
       <View style={styles.container}>
         <Text style={styles.header}>Mis asignaciones</Text>
-        <Text style={styles.empty}>Por favor, inicia sesión para ver tus asignaciones.</Text>
+        <Text style={styles.empty}>
+          Por favor, inicia sesión para ver tus asignaciones.
+        </Text>
       </View>
     );
   }
-
- 
 
   if (loading) {
     return (
@@ -101,8 +81,8 @@ export default function AssignmentsComponent() {
         selectedTicket={selectedTicket}
         setSelectedTicket={setSelectedTicket}
         handleChangeSubtaskStatus={handleChangeSubtaskStatus}
-        myAssignments={true}
         user={user}
+        myAssignments={true}
       />
     </View>
   );

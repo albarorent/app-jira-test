@@ -5,7 +5,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 
 export default function LoginScreen() {
-  const { width, height } = Dimensions.get('window');
+  const { width } = Dimensions.get('window');
   
   const { login } = useUserStore();
   const [email, setEmail] = useState('arcedaniel@gmail.com');

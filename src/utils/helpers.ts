@@ -1,3 +1,14 @@
+import { Ticket } from "@services/ticketMockService";
+
+
+type StatusSummary = {
+  [estado: string]: number;
+};
+
+type Report = {
+  [usuario: string]: StatusSummary;
+};
+
 export function getStatusColor(status: string | undefined) {
   switch (status) {
     case 'open':
@@ -48,3 +59,14 @@ export const SUBTASK_STATUSES = [
   { value: 'blocked', label: 'Blocked' },
   { value: 'closed', label: 'Closed' },
 ];
+
+
+export function groupTicketsByUserAndStatus(tickets: Ticket[]): Report {
+  const report: Report = {};
+  tickets.forEach(t => {
+    if (!report[t.assignedTo]) report[t.assignedTo] = {};
+    if (!report[t.assignedTo][t.status]) report[t.assignedTo][t.status] = 0;
+    report[t.assignedTo][t.status] += 1;
+  });
+  return report;
+}

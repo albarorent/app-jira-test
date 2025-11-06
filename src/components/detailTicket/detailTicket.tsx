@@ -2,17 +2,26 @@ import { View, Text, Modal, StyleSheet, Button } from 'react-native';
 import React, { memo, useEffect, useState } from 'react';
 import { ScrollView, TextInput } from 'react-native-gesture-handler';
 import { Picker } from '@react-native-picker/picker';
-import { getStatusColor, getStatusText, SUBTASK_STATUSES } from '@utils/helpers';
-import { Ticket, TicketStatus, updateTicketStatus } from '@services/ticketMockService';
+import {
+  getStatusColor,
+  getStatusText,
+  SUBTASK_STATUSES,
+} from '@utils/helpers';
+import {
+  Ticket,
+  TicketStatus,
+  updateTicketStatus,
+} from '@services/ticketMockService';
 import { useCommentStore } from '@state/useCommets';
 import { getUserByEmail } from '@services/userService';
+import { useStatusStore } from '@state/useStatusStore';
 
 interface DetailTicketProps {
   selectedTicket: Ticket | null;
   setSelectedTicket: React.Dispatch<React.SetStateAction<Ticket | null>>;
   handleChangeSubtaskStatus?: (
     subtaskId: string,
-    newStatus: TicketStatus
+    newStatus: TicketStatus,
   ) => void;
   myAssignments?: boolean;
   user: { email: string };
@@ -21,7 +30,7 @@ interface DetailTicketProps {
 const MAX_COMMENT_HEIGHT = 300;
 
 const TICKET_STATUSES = [
-  { value: 'done', label: 'Done' },
+  { value: 'done', label: 'Finalizado' },
   { value: 'cancel', label: 'Cancelado' },
   { value: 'blocked', label: 'Bloqueado' },
   { value: 'pending', label: 'Pendiente' },
@@ -40,6 +49,7 @@ const DetailTicket = memo(
     const [roleUser, setRoleUser] = useState<string>('');
     const addComment = useCommentStore(state => state.addComment);
     const getComments = useCommentStore(state => state.getComments);
+    const setStatus = useStatusStore(state => state.setStatus);
 
     useEffect(() => {
       getUserByEmail(user.email).then(userData => {
@@ -60,15 +70,23 @@ const DetailTicket = memo(
     const handleTicketStatusChange = (newStatus: Ticket['status']) => {
       if (selectedTicket.status === newStatus) return;
       updateTicketStatus(selectedTicket.id, newStatus).then(updatedTicket => {
-        if (updatedTicket) setSelectedTicket(updatedTicket);
+        if (updatedTicket) {
+          setSelectedTicket(updatedTicket);
+          setStatus(newStatus);
+        }
       });
     };
-
+    
     return (
       <Modal visible={!!selectedTicket} animationType="slide" transparent>
         <View style={styles.modalContainer}>
           <View style={styles.modalBox}>
-            <View style={{ backgroundColor: getStatusColor(selectedTicket.status), height: 5 }} />
+            <View
+              style={{
+                backgroundColor: getStatusColor(selectedTicket.status),
+                height: 5,
+              }}
+            />
             <ScrollView contentContainerStyle={{ padding: 16 }}>
               <Text style={styles.modalTitle}>{selectedTicket.title}</Text>
               <Text style={styles.modalLabel}>
@@ -79,58 +97,70 @@ const DetailTicket = memo(
               </Text>
 
               {/* Picker para el estado del ticket */}
-             {
-                roleUser === 'lead' ? (
-                   <View style={{ marginVertical: 10 }}>
-                <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Estado general del ticket:</Text>
-                <View style={[styles.pickerContainer, { borderColor: getStatusColor(selectedTicket.status) }]}>
-                  <Picker
-                    enabled={roleUser === 'lead'}
-                    onValueChange={(itemValue) => handleTicketStatusChange(itemValue as Ticket['status'])}
+              {roleUser === 'lead' ? (
+                <View style={{ marginVertical: 10 }}>
+                  <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>
+                    Estado general del ticket:
+                  </Text>
+                  <View
+                    style={[
+                      styles.pickerContainer,
+                      { borderColor: getStatusColor(selectedTicket.status) },
+                    ]}
                   >
-                    {TICKET_STATUSES.map(status => (
-                      <Picker.Item
-                        key={status.value}
-                        label={status.label}
-                        value={status.value}
-                        color={getStatusColor(status.value)}
-                      />
-                    ))}
-                  </Picker>
+                    <Picker
+                      enabled={roleUser === 'lead'}
+                      selectedValue={selectedTicket.status}
+                      onValueChange={itemValue =>
+                        handleTicketStatusChange(itemValue as Ticket['status'])
+                      }
+                    >
+                      {TICKET_STATUSES.map(status => (
+                        <Picker.Item
+                          key={status.value}
+                          label={status.label}
+                          value={status.value}
+                          color={getStatusColor(status.value)}
+                        />
+                      ))}
+                    </Picker>
+                  </View>
                 </View>
-              </View>
-                ) : (
-  <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  marginVertical: 6,
-                }}
-              >
+              ) : (
                 <View
-                  style={[
-                    styles.statusDot,
-                    { backgroundColor: getStatusColor(selectedTicket.status) },
-                  ]}
-                />
-                <Text style={styles.statusText}>
-                  {getStatusText(selectedTicket.status)}
-                </Text>
-              </View>
-                )
-             }
-
-          
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginVertical: 6,
+                  }}
+                >
+                  <View
+                    style={[
+                      styles.statusDot,
+                      {
+                        backgroundColor: getStatusColor(selectedTicket.status),
+                      },
+                    ]}
+                  />
+                  <Text style={styles.statusText}>
+                    {getStatusText(selectedTicket.status)}
+                  </Text>
+                </View>
+              )}
 
               <Text style={styles.modalLabel}>Descripción:</Text>
-              <Text style={styles.modalValue}>{selectedTicket.description}</Text>
+              <Text style={styles.modalValue}>
+                {selectedTicket.description}
+              </Text>
 
               <Text style={styles.modalLabel}>Fecha:</Text>
               <Text style={styles.modalValue}>{selectedTicket.date}</Text>
 
               {selectedTicket.subtasks?.length ? (
                 <>
-                  <Text style={[styles.modalLabel, { marginTop: 12 }]}>Subtareas:</Text>
+                  <Text style={[styles.modalLabel, { marginTop: 12 }]}>
+                    Subtareas:
+                  </Text>
                   {selectedTicket.subtasks.map(sub => (
                     <View key={sub.id} style={styles.subtaskItem}>
                       <View
@@ -145,16 +175,15 @@ const DetailTicket = memo(
                           styles.subtaskStatus,
                           { color: getStatusColor(sub.status) },
                         ]}
-                      >{getStatusText(sub.status)}</Text>
+                      >
+                        {getStatusText(sub.status)}
+                      </Text>
                       {handleChangeSubtaskStatus && roleUser === 'lead' ? (
                         <Picker
                           selectedValue={sub.status}
                           style={{ height: 30, width: 150 }}
                           onValueChange={itemValue =>
-                            handleChangeSubtaskStatus(
-                              sub.id,
-                              itemValue,
-                            )
+                            handleChangeSubtaskStatus(sub.id, itemValue)
                           }
                         >
                           {SUBTASK_STATUSES.map(status => (
@@ -191,18 +220,25 @@ const DetailTicket = memo(
                           padding: 7,
                         }}
                       >
-                        <Text style={{
-                          color: c.author !== user.email ? '#691085ff' : '#a2c429ff',
-                          fontWeight: 'bold',
-                        }}>
+                        <Text
+                          style={{
+                            color:
+                              c.author !== user.email
+                                ? '#691085ff'
+                                : '#a2c429ff',
+                            fontWeight: 'bold',
+                          }}
+                        >
                           {c.author}
                         </Text>
                         <Text>{c.text}</Text>
-                        <Text style={{
-                          fontSize: 11,
-                          color: '#aaa',
-                          alignSelf: 'flex-end',
-                        }}>
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            color: '#aaa',
+                            alignSelf: 'flex-end',
+                          }}
+                        >
                           {new Date(c.date).toLocaleString()}
                         </Text>
                       </View>
@@ -225,19 +261,24 @@ const DetailTicket = memo(
                 }}
                 multiline
               />
-              <View style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-              }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                }}
+              >
                 <Button title="Enviar" onPress={handleSendComment} />
-                <Button title="Cerrar" onPress={() => setSelectedTicket(null)} />
+                <Button
+                  title="Cerrar"
+                  onPress={() => setSelectedTicket(null)}
+                />
               </View>
             </ScrollView>
           </View>
         </View>
       </Modal>
     );
-  }
+  },
 );
 
 const styles = StyleSheet.create({

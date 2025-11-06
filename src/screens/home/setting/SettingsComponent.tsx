@@ -1,12 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Switch,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
 import { useUserStore } from '@state/userStore';
 import ColorPicker from '@components/colorPicker/colorPicker';
 
 export default function SettingsComponent() {
-  const user = useUserStore((state) => state.user);
-  const setUserColor = useUserStore((state) => state.setUserColor);
-  const logout = useUserStore((state) => state.logout);
+  const user = useUserStore(state => state.user);
+  const setUserColor = useUserStore(state => state.setUserColor);
+  const logout = useUserStore(state => state.logout);
 
   const [selectedColor, setSelectedColor] = useState(user?.color || '#33A1FF');
   const [biometricEnabled, setBiometricEnabled] = useState(false);
@@ -23,21 +30,23 @@ export default function SettingsComponent() {
       setSelectedColor(color);
       if (user) setUserColor(color);
     },
-    [selectedColor, user]
+    [selectedColor, user],
   );
 
   const handleBiometricToggle = (value: boolean) => {
     setBiometricEnabled(value);
     Alert.alert(
       'Huella digital',
-      value ? 'Huella digital activada correctamente' : 'Huella digital desactivada'
+      value
+        ? 'Huella digital activada correctamente'
+        : 'Huella digital desactivada',
     );
   };
 
   const handleAbout = () => {
     Alert.alert(
       'Acerca de la aplicación',
-      'Versión 1.0.0\nDesarrollado por el equipo de soporte técnico.'
+      'Versión 1.0.0\nDesarrollado por el equipo de soporte técnico.',
     );
   };
 
@@ -49,22 +58,36 @@ export default function SettingsComponent() {
 
         <View style={styles.preferenceBox}>
           <Text style={styles.preferenceTitle}>Color de usuario</Text>
-          <ColorPicker selectedColor={selectedColor} onSelect={handleColorChange} />
+          <ColorPicker
+            selectedColor={selectedColor}
+            onSelect={handleColorChange}
+          />
         </View>
       </View>
 
       <View style={styles.sectionBottom}>
         <View style={styles.utilityRow}>
           <Text style={styles.utilityText}>Activar Huella Digital</Text>
-          <Switch value={biometricEnabled} onValueChange={handleBiometricToggle} />
+          <Switch
+            value={biometricEnabled}
+            onValueChange={handleBiometricToggle}
+          />
         </View>
 
         <TouchableOpacity style={styles.utilityRow} onPress={handleAbout}>
           <Text style={styles.utilityText}>Acerca de</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.utilityRow, { marginTop: 12 }]} onPress={logout}>
-          <Text style={[styles.utilityText, { color: '#D32F2F', fontWeight: '600' }]}>
+        <TouchableOpacity
+          style={[styles.utilityRow, { marginTop: 12 }]}
+          onPress={logout}
+        >
+          <Text
+            style={[
+              styles.utilityText,
+              { color: '#D32F2F', fontWeight: '600' },
+            ]}
+          >
             Cerrar sesión
           </Text>
         </TouchableOpacity>

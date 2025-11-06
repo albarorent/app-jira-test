@@ -1,66 +1,75 @@
-import React, { useEffect, useState } from 'react';
-import { Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
-import { getTickets, Ticket } from '@services/ticketMockService';
-import { getUserByEmail, User } from '@services/userService';
+import {
+  Text,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
+  StyleSheet,
+} from 'react-native';
+import { Ticket } from '@services/ticketMockService';
+import { User } from '@services/userService';
 import { useUserStore } from '@state/userStore';
+import { getStatusColor, getStatusText } from '@utils/helpers';
+import { useStatusStore } from '@state/useStatusStore';
+import { useLoadTicket } from '@hooks/useLoadTicket';
 
 interface TicketListProps {
   onSelectTicket: (ticket: Ticket) => void;
 }
 
-interface EnrichedTicket extends Ticket {
+export interface EnrichedTicket extends Ticket {
   assignedUser?: User;
 }
 
 export default function TicketList({ onSelectTicket }: TicketListProps) {
-  const [tickets, setTickets] = useState<EnrichedTicket[]>([]);
-  const [loading, setLoading] = useState(true);
-  const currentUser = useUserStore((state) => state.user);
-
-  useEffect(() => {
-    const loadTickets = async () => {
-      const allTickets = await getTickets();
-
-      const enrichedTickets = await Promise.all(
-        allTickets.map(async (t) => {
-          const user = await getUserByEmail(t.assignedTo);
-          return { ...t, assignedUser: user };
-        })
-      );
-
-      setTickets(enrichedTickets);
-      setLoading(false);
-    };
-
-    loadTickets();
-  }, []);
+  
+  const currentUser = useUserStore(state => state.user);
+  const status = useStatusStore(state => state.status);
+  const { tickets, loading } = useLoadTicket(status ?? undefined);
 
   if (loading) {
-    return <ActivityIndicator size="large" color="#691085ff" style={{ marginTop: 40 }} />;
+    return (
+      <ActivityIndicator
+        size="large"
+        color="#691085ff"
+        style={{ marginTop: 40 }}
+      />
+    );
   }
 
   return (
     <FlatList
       data={tickets}
-      keyExtractor={(item) => item.id}
+      keyExtractor={item => item.id}
       renderItem={({ item }) => {
         const isMine = item.assignedTo === currentUser?.email;
-        const borderColor = isMine ? currentUser?.color || '#691085ff' : '#f3f3f3';
+        const borderColor = isMine
+          ? currentUser?.color || '#691085ff'
+          : '#f3f3f3';
 
         return (
           <TouchableOpacity
-            style={[styles.item, { borderLeftColor: borderColor, borderLeftWidth: 6 }]}
+            style={[
+              styles.item,
+              { borderLeftColor: borderColor, borderLeftWidth: 6 },
+            ]}
             onPress={() => onSelectTicket(item)}
           >
             <Text style={styles.title}>{item.title}</Text>
             <Text style={styles.subtitle}>
               {item.assignedUser?.name ?? item.assignedTo}
             </Text>
-            <Text style={styles.status}>Estado: {item.status}</Text>
+            <Text
+              style={[styles.status, { color: getStatusColor(item.status) }]}
+            >
+              <Text style={{ fontWeight: 'bold' }}>Estado:</Text>{' '}
+              {getStatusText(item.status)}
+            </Text>
           </TouchableOpacity>
         );
       }}
-      ListEmptyComponent={<Text style={styles.empty}>No hay tickets disponibles</Text>}
+      ListEmptyComponent={
+        <Text style={styles.empty}>No hay tickets disponibles</Text>
+      }
     />
   );
 }
